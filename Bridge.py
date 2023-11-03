@@ -1,14 +1,21 @@
 from ImageLabelModel import *
 
+# This class handles the connection between the Python backend and the Java frontend.
 class Bridge:
+
+    # The constructor has the arguments of the Python terminal command.
+    # Every attribute is defined by user in Java Gui.
     def __init__(self, args):
         self.args = args
     
+    # determines if string is "true" or "false"
+    # returns corresponding boolean
     def isTrue(self, s):
         if (s == "true"):
             return True
         return False
 
+    # process the testing images with the appropriate parameters
     def process(self):
         _, (ax1) = plt.subplots(1, 1, figsize=(4, 4), sharex=True, sharey=True)
         ax1.set_title("Set up started.")
@@ -36,8 +43,8 @@ class Bridge:
         _, (ax1) = plt.subplots(1, 1, figsize=(4, 4), sharex=True, sharey=True)
         ax1.set_title("Process ended.")
         plt.show() 
-        return
 
+    # analyze the testing images with the appropriate text files
     def analyze_method(self):
         _, (ax1) = plt.subplots(1, 1, figsize=(4, 4), sharex=True, sharey=True)
         ax1.set_title("Analysis has begun.")

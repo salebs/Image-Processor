@@ -12,7 +12,11 @@ from Image import *
 from Patch import *
 
 
+# This class handles the construction and characteristics of the Image Processor's model and computer vision process.
 class ImageLabelModel:
+    
+    # The constructor has the model's directory, type, negative count, image size, patch size, cell size, block size, scales, step, and whether it will display positive training images or all testing images(or both or neither).
+    # Every attribute is read in from arguments in the start.
     def __init__(self, directory, model_type, negative_patch_count, image_size, patch_size, cell_size, block_size, scales, step_size, display_train, display_test):
         self.modelType = model_type
         self.model = None
@@ -27,6 +31,7 @@ class ImageLabelModel:
         self.displayTrain = display_train
         self.displayTest = display_test
 
+    # visualize a patch against its histogram of gradients
     def visualize(self, patch, hog_image_rescaled):
         _, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4), sharex=True, sharey=True)
         ax1.axis('off')
@@ -37,11 +42,15 @@ class ImageLabelModel:
         ax2.set_title('Histogram of Oriented Gradients')
         plt.show()
 
-    def train(self, p):
+    # obtain the rescaled histogram of gradient for patch
+    # returns the pixel data of the rescaled histogram of gradients
+    def rhog(self, p):
         _, patchHOG = hog(p.patch, orientations=9, pixels_per_cell=self.cellSize, cells_per_block=self.blockSize, visualize=True, channel_axis=-1)
         hog_image_rescaled = rescale_intensity(patchHOG, in_range=(0, 10))
         return hog_image_rescaled
     
+    # read in user-labeled positive patches and obtain rescaled histogram of gradients for each
+    # returns a list for the positive patches and a list of the corresponding rescaled histogram of gradients
     def get_positive_patches(self):
         positivePatchHOGs = []
         positivePatches = []
@@ -51,16 +60,20 @@ class ImageLabelModel:
             p.size = (len(img[0]), len(img[1]))
             patch = p.pad(img, self.patchSize)
             p.patch, p.prediction, p.probability = patch, 1, [0.0, 1.0]
-            hog_image_rescaled = self.train(p)
+            hog_image_rescaled = self.rhog(p)
             positivePatchHOGs.append(hog_image_rescaled)
             positivePatches.append(p.patch)
         return positivePatchHOGs, positivePatches
 
+    # extract random patches from an image
+    # returns a list of random patches taken from image
     def extract_patches(self, image):
         extractor = PatchExtractor(patch_size=self.patchSize, max_patches=self.negativePatchCount, random_state=0)
         patches = extractor.transform(image[np.newaxis])
         return patches
 
+    # read in user-labeled negative images and obtain rescaled histogram of gradients for each
+    # returns a list for the negative patches and a list of the corresponding rescaled histogram of gradients
     def get_negative_patches(self):
         negativePatchHOGs = []
         negativePatches = []
@@ -71,11 +84,13 @@ class ImageLabelModel:
             for patch in patches:
                 p = Patch()
                 p.size, p.patch, p.prediction, p.probability = self.patchSize, patch.astype('uint8'), 0, [1.0, 0.0]
-                hog_image_rescaled = self.train(p)
+                hog_image_rescaled = self.rhog(p)
                 negativePatchHOGs.append(hog_image_rescaled)
                 negativePatches.append(p.patch)
         return negativePatchHOGs, negativePatches
 
+    # train a model based on the user-labeled positive and negative images' rescaled historgram of gradients
+    # returns a list of the appropriate patch pixel data and label
     def get_trained(self):
         trainedPositivePatches, positivePatches = self.get_positive_patches()
         
@@ -110,6 +125,7 @@ class ImageLabelModel:
 
         return xTrain, yTrain
 
+    # creates model specified by user, trains it with appropriate information, and sets Image Processor's model
     def create_model(self):
         _, (ax1) = plt.subplots(1, 1, figsize=(4, 4), sharex=True, sharey=True)
         ax1.set_title("Make model.")
@@ -142,6 +158,8 @@ class ImageLabelModel:
         
         self.model = model
 
+    # read in testing images, equalize the brightness and add borders to said images
+    # returns a list of equally bright and padded images
     def get_testing_images(self):
         _, (ax1) = plt.subplots(1, 1, figsize=(4, 4), sharex=True, sharey=True)
         ax1.set_title("Gathering testing images.")
@@ -163,9 +181,14 @@ class ImageLabelModel:
             testingImages.append(i)
         return testingImages
 
-    def thread_method(self, test_images, finalLabels):
+    # labels a set of testing images based on user-specified patch size and scale (pyramiding)
+    # adds section of predictions and probabilities to overall list
+    def thread_method(self, test_images, finalLabels, name):
         labels = []
+        i = 0
         for image in test_images:
+            i += 1
+            print(f"thread {name}: {i}/{len(test_images)}\n")
             for scale in self.scales:
                 a, b = int(self.patchSize[0] * scale), int(self.patchSize[1] * scale)
                 for i in range(0,  image.size[0] - a + 1, int(a * self.stepSize)):
@@ -174,53 +197,56 @@ class ImageLabelModel:
                         patch = image.image[j:j + b, i:i + a]
                         p.size = (patch.shape[1], patch.shape[0])
                         patch = cv2.resize(patch, self.patchSize)
-                        p.patch, p.prediction, p.probability = None, None
+                        p.patch, p.prediction, p.probability = patch, None, None
                         prediction, probability = p.label(self.model, self.cellSize, self.blockSize)
                         image.update(prediction, probability)
             labels.append([image.get_prediction(), image.get_probability()])
             if self.displayTest:
                 image.display()
-        finalLabels.put(labels)
+        finalLabels.append(labels)
     
+    # utilize multiple treads to parallel as they each cover a set of the testing images
+    # returns a list of the predictions and probabilities for all testing images
     def get_labels(self, testingImages):
         self.create_model()
         finalLabels = []
-        threadImageIndex = int(len(testingImages)/8) + 1
+        threadImageIndex = round(len(testingImages)/8)
 
         _, (ax1) = plt.subplots(1, 1, figsize=(4, 4), sharex=True, sharey=True)
         ax1.set_title("Threads have started.")
         plt.show() 
 
-        t1 = Thread(target=self.thread_method, args=(testingImages[:threadImageIndex], finalLabels), name="1")
+        t1 = Thread(target=self.thread_method, args=(testingImages[:threadImageIndex], finalLabels, 1), name="1")
         t1.start()
-        # t2 = Thread(target=self.thread_method, args=(testingImages[threadImageIndex:2*threadImageIndex], finalLabels), name="2")
-        # t2.start()
-        # t3 = Thread(target=self.thread_method, args=(testingImages[2*threadImageIndex:3*threadImageIndex], finalLabels), name="3")
-        # t3.start()
-        # t4 = Thread(target=self.thread_method, args=(testingImages[3*threadImageIndex:4*threadImageIndex], finalLabels), name="4")
-        # t4.start()
-        # t5 = Thread(target=self.thread_method, args=(testingImages[4*threadImageIndex:5*threadImageIndex], finalLabels), name="5")
-        # t5.start()
-        # t6 = Thread(target=self.thread_method, args=(testingImages[5*threadImageIndex:6*threadImageIndex], finalLabels), name="6")
-        # t6.start()
-        # t7 = Thread(target=self.thread_method, args=(testingImages[6*threadImageIndex:7*threadImageIndex], finalLabels), name="7")
-        # t7.start()
-        # t8 = Thread(target=self.thread_method, args=(testingImages[7*threadImageIndex:], finalLabels), name="8")
-        # t8.start()
-        # t1.join()
-        # t2.join()
-        # t3.join()
-        # t4.join()
-        # t5.join()
-        # t6.join()
-        # t7.join()
-        # t8.join()
+        t2 = Thread(target=self.thread_method, args=(testingImages[threadImageIndex:2*threadImageIndex], finalLabels, 2), name="2")
+        t2.start()
+        t3 = Thread(target=self.thread_method, args=(testingImages[2*threadImageIndex:3*threadImageIndex], finalLabels, 3), name="3")
+        t3.start()
+        t4 = Thread(target=self.thread_method, args=(testingImages[3*threadImageIndex:4*threadImageIndex], finalLabels, 4), name="4")
+        t4.start()
+        t5 = Thread(target=self.thread_method, args=(testingImages[4*threadImageIndex:5*threadImageIndex], finalLabels, 5), name="5")
+        t5.start()
+        t6 = Thread(target=self.thread_method, args=(testingImages[5*threadImageIndex:6*threadImageIndex], finalLabels, 6), name="6")
+        t6.start()
+        t7 = Thread(target=self.thread_method, args=(testingImages[6*threadImageIndex:7*threadImageIndex], finalLabels, 7), name="7")
+        t7.start()
+        t8 = Thread(target=self.thread_method, args=(testingImages[7*threadImageIndex:], finalLabels, 8), name="8")
+        t8.start()
+        t1.join()
+        t2.join()
+        t3.join()
+        t4.join()
+        t5.join()
+        t6.join()
+        t7.join()
+        t8.join()
 
         _, (ax1) = plt.subplots(1, 1, figsize=(4, 4), sharex=True, sharey=True)
         ax1.set_title("Threads have ended.")
         plt.show() 
         return finalLabels
         
+    # write the testing images' predictions and probabilities into a text file
     def results(self):
         testingImages = self.get_testing_images()
         labels = self.get_labels(testingImages)
@@ -231,5 +257,6 @@ class ImageLabelModel:
             outputFile.write(f"\tProbability- {label[1]}\n")
         outputFile.close()
 
+    # run the Image Processor
     def main(self):
         self.results()

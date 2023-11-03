@@ -4,12 +4,33 @@ import javax.swing.*;
 
 import java.io.IOException;
 
+/**
+ * This class enables the user to easily access the Image Processor with specified parameters and without touching any code.
+ * 
+ * @author Benjamin Sale
+ */
 public class GuiMain extends JFrame implements ActionListener{
 
+    /**
+     * The fields will have the user-defined arguments for the terminal command.
+     */
     private static JTextField[] fields;
+
+    /**
+     * The view will have the flags to determine if the user wants to see the trained or testing images.
+     */
     private static JCheckBox[] view;
+
+    /**
+     * The button is the process button.
+     */
     private JButton button;
 
+    /**
+     * When the process button is hit, a process thread is spun off to construct an Image Processor with the user specified paramters. It will also disable the process button and create a GuiWindow.
+     * 
+     * @param args a string array with the appropriate terminal command arguments
+     */
     public void run(String[] args) {
         try {
             String command = "C:\\Users\\benss\\AppData\\Local\\Programs\\Python\\Python39\\python.exe " + args[0] + "\\Process.py";
@@ -28,6 +49,9 @@ public class GuiMain extends JFrame implements ActionListener{
         }
     }
 
+    /**
+     * Ensure all fields are filled out in GUI and starts the process based off the user-defined parameters.
+     */
     public void actionPerformed(ActionEvent event) {
         String[] args = new String[16];
         for (int i=0; i<fields.length; i++) {
@@ -48,6 +72,9 @@ public class GuiMain extends JFrame implements ActionListener{
         run(args);
     }
     
+    /**
+     * Create a GUI and install all appropriate fields and check boxes to gather terminal command arguments, as well as process button.
+     */
     public GuiMain() {
         fields = new JTextField[14];
         view = new JCheckBox[2];
