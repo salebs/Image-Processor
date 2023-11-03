@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from skimage.feature import hog
+from skimage.exposure import rescale_intensity
 
 
 class Patch:
@@ -21,9 +22,10 @@ class Patch:
         return paddedPatch
 
     def label(self, model, cell_size, block_size):
-        patchHOG = hog(self.patch, pixels_per_cell=cell_size, cells_per_block=block_size, channel_axis=2)
-        prediction = model.predict(np.array(patchHOG, ndmin=2))
-        probability = model.predict_proba(np.array(patchHOG, ndmin=2))
+        _, patchHOG = hog(self.patch, orientations=9, pixels_per_cell=cell_size, cells_per_block=block_size, visualize=True, channel_axis=-1)
+        hog_image_rescaled = rescale_intensity(patchHOG, in_range=(0, 10))
+        prediction = model.predict(hog_image_rescaled)
+        probability = model.predict_proba(hog_image_rescaled)
         self.prediction = prediction[0]
         self.probability = probability[0]
         return prediction[0], probability[0]
