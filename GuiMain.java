@@ -146,12 +146,12 @@ public class GuiMain extends JFrame implements ActionListener{
         JLabel cellSize = new JLabel("Enter cell size:");
         cellSize.setBounds(20, 150, 150, 20);
         add(cellSize);
-        JTextField cellSizeMinResponse = new JTextField("8");
+        JTextField cellSizeMinResponse = new JTextField("5");
         cellSizeMinResponse.setBounds(160, 150, 25, 20);
         cellSizeMinResponse.setName("cell size minimum");
         add(cellSizeMinResponse);
         fields[7] = cellSizeMinResponse;
-        JTextField cellSizeMaxResponse = new JTextField("8");
+        JTextField cellSizeMaxResponse = new JTextField("5");
         cellSizeMaxResponse.setBounds(190, 150, 25, 20);
         cellSizeMaxResponse.setName("cell size maximum");
         add(cellSizeMaxResponse);

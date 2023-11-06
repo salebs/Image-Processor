@@ -45,7 +45,7 @@ class ImageLabelModel:
     # obtain the rescaled histogram of gradient for patch
     # returns the pixel data of the rescaled histogram of gradients
     def rhog(self, p):
-        _, patchHOG = hog(p.patch, orientations=9, pixels_per_cell=self.cellSize, cells_per_block=self.blockSize, visualize=True, channel_axis=-1)
+        _, patchHOG = hog(p.getPatch(), orientations=9, pixels_per_cell=self.cellSize, cells_per_block=self.blockSize, visualize=True, channel_axis=-1)
         hog_image_rescaled = rescale_intensity(patchHOG, in_range=(0, 10))
         return hog_image_rescaled
     
@@ -57,6 +57,11 @@ class ImageLabelModel:
         for file in glob.iglob(f'{self.directory}/positive/*'):
             p = Patch()
             img = cv2.imread(file)
+            # B, G, R = cv2.split(img)
+            # B = cv2.equalizeHist(B)
+            # G = cv2.equalizeHist(G)
+            # R = cv2.equalizeHist(R)
+            # img = cv2.merge((B, G, R))
             p.size = (len(img[0]), len(img[1]))
             patch = p.pad(img, self.patchSize)
             p.patch, p.prediction, p.probability = patch, 1, [0.0, 1.0]
@@ -80,6 +85,11 @@ class ImageLabelModel:
         for file in glob.iglob(f'{self.directory}/negative/*'):
             image = cv2.imread(file)
             image = cv2.resize(image, self.imageSize)
+            # B, G, R = cv2.split(image)
+            # B = cv2.equalizeHist(B)
+            # G = cv2.equalizeHist(G)
+            # R = cv2.equalizeHist(R)
+            # image = cv2.merge((B, G, R))
             patches = self.extract_patches(image)
             for patch in patches:
                 p = Patch()
@@ -170,14 +180,15 @@ class ImageLabelModel:
             i = Image()
             img = cv2.imread(file)
             img = cv2.resize(img, self.imageSize)
-            B, G, R = cv2.split(img)
-            B = cv2.equalizeHist(B)
-            G = cv2.equalizeHist(G)
-            R = cv2.equalizeHist(R)
-            img = cv2.merge((B, G, R))
+            # B, G, R = cv2.split(img)
+            # B = cv2.equalizeHist(B)
+            # G = cv2.equalizeHist(G)
+            # R = cv2.equalizeHist(R)
+            # img = cv2.merge((B, G, R))
             imgPadded = cv2.copyMakeBorder(img, self.patchSize[0], self.patchSize[0], self.patchSize[1],
                                            self.patchSize[1], cv2.BORDER_CONSTANT, None, value=0)
-            i.file, i.size, i.image, i.predictions, i.probabilities = file, self.imageSize, imgPadded, [], []
+            imgPaddSize = list(imgPadded.shape)[:-1]
+            i.file, i.size, i.image, i.predictions, i.probabilities = file, imgPaddSize, imgPadded, [], []
             testingImages.append(i)
         return testingImages
 
@@ -185,22 +196,31 @@ class ImageLabelModel:
     # adds section of predictions and probabilities to overall list
     def thread_method(self, test_images, finalLabels, name):
         labels = []
-        i = 0
+        count = 0
         for image in test_images:
-            i += 1
-            print(f"thread {name}: {i}/{len(test_images)}\n")
+            count += 1
+            scaleCounts = []
+            img = cv2.imread(image.getFile())
+            img = cv2.resize(img, (image.getSize(1), image.getSize(0)))
+            print(f"thread {name}: {count}/{len(test_images)}")
             for scale in self.scales:
+                print(f"thread {name}: {count}/{len(test_images)} (scale: {scale})")
                 a, b = int(self.patchSize[0] * scale), int(self.patchSize[1] * scale)
-                for i in range(0,  image.size[0] - a + 1, int(a * self.stepSize)):
-                    for j in range(0, image.size[1] - b + 1, int(b * self.stepSize)):
+                scaleCount = 0
+                for i in range(0,  image.getSize(0) - a + 1, int(a * self.stepSize)):
+                    for j in range(0, image.getSize(1) - b + 1, int(b * self.stepSize)):
                         p = Patch()
-                        patch = image.image[j:j + b, i:i + a]
-                        p.size = (patch.shape[1], patch.shape[0])
+                        patch = image.getImage(a, b, i, j)
+                        p.size = (list(patch.shape)[1], list(patch.shape)[0])
                         patch = cv2.resize(patch, self.patchSize)
                         p.patch, p.prediction, p.probability = patch, None, None
                         prediction, probability = p.label(self.model, self.cellSize, self.blockSize)
+                        if prediction == 1:
+                            scaleCount += 1
                         image.update(prediction, probability)
+                scaleCounts.append(scaleCount)
             labels.append([image.get_prediction(), image.get_probability()])
+            print(f"thread {name}: {count}/{len(test_images)} (Prediction: {image.get_prediction()}, Probability: {image.get_probability()}, counts: {scaleCounts})")
             if self.displayTest:
                 image.display()
         finalLabels.append(labels)
@@ -210,7 +230,7 @@ class ImageLabelModel:
     def get_labels(self, testingImages):
         self.create_model()
         finalLabels = []
-        threadImageIndex = round(len(testingImages)/8)
+        threadImageIndex = round(len(testingImages)/4)
 
         _, (ax1) = plt.subplots(1, 1, figsize=(4, 4), sharex=True, sharey=True)
         ax1.set_title("Threads have started.")
@@ -224,22 +244,22 @@ class ImageLabelModel:
         t3.start()
         t4 = Thread(target=self.thread_method, args=(testingImages[3*threadImageIndex:4*threadImageIndex], finalLabels, 4), name="4")
         t4.start()
-        t5 = Thread(target=self.thread_method, args=(testingImages[4*threadImageIndex:5*threadImageIndex], finalLabels, 5), name="5")
-        t5.start()
-        t6 = Thread(target=self.thread_method, args=(testingImages[5*threadImageIndex:6*threadImageIndex], finalLabels, 6), name="6")
-        t6.start()
-        t7 = Thread(target=self.thread_method, args=(testingImages[6*threadImageIndex:7*threadImageIndex], finalLabels, 7), name="7")
-        t7.start()
-        t8 = Thread(target=self.thread_method, args=(testingImages[7*threadImageIndex:], finalLabels, 8), name="8")
-        t8.start()
+        # t5 = Thread(target=self.thread_method, args=(testingImages[4*threadImageIndex:5*threadImageIndex], finalLabels, 5), name="5")
+        # t5.start()
+        # t6 = Thread(target=self.thread_method, args=(testingImages[5*threadImageIndex:6*threadImageIndex], finalLabels, 6), name="6")
+        # t6.start()
+        # t7 = Thread(target=self.thread_method, args=(testingImages[6*threadImageIndex:7*threadImageIndex], finalLabels, 7), name="7")
+        # t7.start()
+        # t8 = Thread(target=self.thread_method, args=(testingImages[7*threadImageIndex:], finalLabels, 8), name="8")
+        # t8.start()
         t1.join()
         t2.join()
         t3.join()
         t4.join()
-        t5.join()
-        t6.join()
-        t7.join()
-        t8.join()
+        # t5.join()
+        # t6.join()
+        # t7.join()
+        # t8.join()
 
         _, (ax1) = plt.subplots(1, 1, figsize=(4, 4), sharex=True, sharey=True)
         ax1.set_title("Threads have ended.")

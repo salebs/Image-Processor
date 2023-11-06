@@ -39,13 +39,23 @@ class Image:
     # displays image to user with corresponding prediction and probability
     def display(self):
         img = cv2.imread(self.file)
-        img = cv2.resize(img, self.size)
+        img = cv2.resize(img, (self.size[1], self.size[0]))
         cv2.imshow(f"Prediction: {self.get_prediction()}, Probability: {self.get_probability()}", img)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
+        
 
     # obtain the name of the image based on the file
     # returns a string representation of the image's name
     def get_name(self):
         return self.file[self.file.rfind("/") + 1:self.file.rfind(".")]
 
+    def getSize(self, i):
+        return self.size[i]
+    
+    def getImage(self, a, b, i, j):
+        patch = self.image[i:i + a, j:j + b]
+        return patch
+    
+    def getFile(self):
+        return self.file
