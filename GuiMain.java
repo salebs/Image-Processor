@@ -1,4 +1,4 @@
-import java.awt.LayoutManager;
+import java.awt.GridLayout;
 import java.awt.event.*;
 import javax.swing.*;
 
@@ -33,19 +33,12 @@ public class GuiMain extends JFrame implements ActionListener{
      */
     public void run(String[] args) {
         try {
-            String command = "C:\\Users\\benss\\AppData\\Local\\Programs\\Python\\Python39\\python.exe " + args[0] + "\\Process.py";
-            for (String arg : args) { command += " " + arg; }
-            System.out.println(command);
+            ImagePanel image = new ImagePanel(button, args);
+            image.setVisible(true);
             button.setEnabled(false);
-            ProcessBuilder processBuilder = new ProcessBuilder(command.split(" "));
-            Process process = processBuilder.start();
-            GuiWindow status = new GuiWindow(process, button);
-            status.setVisible(true);
-            return;
         } catch (IOException e) {
             System.out.println("Exception is caught");
             e.printStackTrace();
-            return;
         }
     }
 
@@ -53,10 +46,10 @@ public class GuiMain extends JFrame implements ActionListener{
      * Ensure all fields are filled out in GUI and starts the process based off the user-defined parameters.
      */
     public void actionPerformed(ActionEvent event) {
-        String[] args = new String[16];
+        String[] args = new String[13];
         for (int i=0; i<fields.length; i++) {
             String fieldText = fields[i].getText();
-            if (fieldText.equals("")) { 
+            if (fieldText == "") { 
                 JOptionPane.showMessageDialog(null, "Enter information for all fields.", "Warning", JOptionPane.WARNING_MESSAGE);
                 return;
             }
@@ -76,140 +69,115 @@ public class GuiMain extends JFrame implements ActionListener{
      * Create a GUI and install all appropriate fields and check boxes to gather terminal command arguments, as well as process button.
      */
     public GuiMain() {
-        fields = new JTextField[14];
+        fields = new JTextField[11];
         view = new JCheckBox[2];
 
         setTitle("Image Processor");
-        setSize(400, 400);
-        setLayout((LayoutManager)null);
-        setLocation(500, 100);
+        setLayout(new GridLayout(12, 3));
+        setLocation(250, 100);
 
-        JLabel introduction = new JLabel("This is the introduction. Enter information below.");
-        introduction.setBounds(20, 0, 300, 20);
-        add(introduction);
-        
-        JLabel directory = new JLabel("Enter directory:");
-        directory.setBounds(20, 25, 100, 20);
-        add(directory);
-        JTextField directoryResponse = new JTextField("C:\\Users\\benss\\PycharmProjects\\COSC-470\\OCT\\Image-Processor");
-        directoryResponse.setBounds(160, 25, 200, 20);
-        directoryResponse.setName("directory");
-        add(directoryResponse);
-        fields[0] = directoryResponse;
 
-        JLabel modelType = new JLabel("Enter model type:");
-        modelType.setBounds(20, 50, 150, 20);
-        add(modelType);
         JTextField modelTypeResponse = new JTextField("KNeighborsClassifier");
-        modelTypeResponse.setBounds(160, 50, 200, 20);
         modelTypeResponse.setName("model type");
-        add(modelTypeResponse);
-        fields[1] = modelTypeResponse;
+        fields[0] = modelTypeResponse;
+        JLabel modelType = new JLabel("Enter model type:");
+        add(modelType);
+        String[] items = {"KNeighborsClassifier", "MLPClassifier", "GridSearchCV"};
+        JComboBox<String> comboBox = new JComboBox<String>(items);
+        comboBox.setSelectedIndex(0);
+        comboBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String selectedOption = (String) comboBox.getSelectedItem();
+                modelTypeResponse.setText(selectedOption);
+            }
+        });
+        add(comboBox);
+
+        add(new JLabel());
 
         JLabel negativePatchCount = new JLabel("Enter negative amount:");
-        negativePatchCount.setBounds(20, 75, 175, 20);
         add(negativePatchCount);
-        JTextField negativePatchCountResponse = new JTextField("100");
-        negativePatchCountResponse.setBounds(160, 75, 25, 20);
+        JTextField negativePatchCountResponse = new JTextField("1");
         negativePatchCountResponse.setName("negative patch number");
         add(negativePatchCountResponse);
-        fields[2] = negativePatchCountResponse;
+        fields[1] = negativePatchCountResponse;
+
+        add(new JLabel());
 
         JLabel imageSize = new JLabel("Enter image size:");
-        imageSize.setBounds(20, 100, 150, 20);
         add(imageSize);
         JTextField imageSizeMinResponse = new JTextField("1000");
-        imageSizeMinResponse.setBounds(160, 100, 30, 20);
         imageSizeMinResponse.setName("image size minimum");
         add(imageSizeMinResponse);
-        fields[3] = imageSizeMinResponse;
+        fields[2] = imageSizeMinResponse;
         JTextField imageSizeMaxResponse = new JTextField("500");
-        imageSizeMaxResponse.setBounds(200, 100, 30, 20);
         imageSizeMaxResponse.setName("image size maximum");
         add(imageSizeMaxResponse);
-        fields[4] = imageSizeMaxResponse;
-
-        JLabel patchSize = new JLabel("Enter patch size:");
-        patchSize.setBounds(20, 125, 150, 20);
-        add(patchSize);
-        JTextField patchSizeMinResponse = new JTextField("100");
-        patchSizeMinResponse.setBounds(160, 125, 25, 20);
-        patchSizeMinResponse.setName("patch size minimum");
-        add(patchSizeMinResponse);
-        fields[5] = patchSizeMinResponse;
-        JTextField patchSizeMaxResponse = new JTextField("100");
-        patchSizeMaxResponse.setBounds(190, 125, 25, 20);
-        patchSizeMaxResponse.setName("patch size maximum");
-        add(patchSizeMaxResponse);
-        fields[6] = patchSizeMaxResponse;
+        fields[3] = imageSizeMaxResponse;
 
         JLabel cellSize = new JLabel("Enter cell size:");
         cellSize.setBounds(20, 150, 150, 20);
         add(cellSize);
-        JTextField cellSizeMinResponse = new JTextField("5");
-        cellSizeMinResponse.setBounds(160, 150, 25, 20);
+        JTextField cellSizeMinResponse = new JTextField("10");
         cellSizeMinResponse.setName("cell size minimum");
         add(cellSizeMinResponse);
-        fields[7] = cellSizeMinResponse;
-        JTextField cellSizeMaxResponse = new JTextField("5");
-        cellSizeMaxResponse.setBounds(190, 150, 25, 20);
+        fields[4] = cellSizeMinResponse;
+        JTextField cellSizeMaxResponse = new JTextField("10");
         cellSizeMaxResponse.setName("cell size maximum");
         add(cellSizeMaxResponse);
-        fields[8] = cellSizeMaxResponse;
+        fields[5] = cellSizeMaxResponse;
 
         JLabel blockSize = new JLabel("Enter block size:");
-        blockSize.setBounds(20, 175, 100, 20);
         add(blockSize);
         JTextField blockSizeMinResponse = new JTextField("1");
-        blockSizeMinResponse.setBounds(160, 175, 25, 20);
         blockSizeMinResponse.setName("block size minimum");
         add(blockSizeMinResponse);
-        fields[9] = blockSizeMinResponse;
+        fields[6] = blockSizeMinResponse;
         JTextField blockSizeMaxResponse = new JTextField("1");
-        blockSizeMaxResponse.setBounds(190, 175, 25, 20);
         blockSizeMaxResponse.setName("block size maximum");
         add(blockSizeMaxResponse);
-        fields[10] = blockSizeMaxResponse;
+        fields[7] = blockSizeMaxResponse;
 
         JLabel stepSize = new JLabel("Enter step size:");
-        stepSize.setBounds(20, 200, 150, 20);
         add(stepSize);
         JTextField stepSizeResponse = new JTextField("0.5");
-        stepSizeResponse.setBounds(160, 200, 25, 20);
         stepSizeResponse.setName("step size");
         add(stepSizeResponse);
-        fields[11] = stepSizeResponse;
+        fields[8] = stepSizeResponse;
+
+        add(new JLabel());
 
         JLabel scales = new JLabel("Enter scales:");
-        scales.setBounds(20, 225, 150, 20);
         add(scales);
         JTextField scalesMinResponse = new JTextField("0.5");
-        scalesMinResponse.setBounds(160, 225, 25, 20);
         scalesMinResponse.setName("scales minimum");
         add(scalesMinResponse);
-        fields[12] = scalesMinResponse;
+        fields[9] = scalesMinResponse;
         JTextField scalesMaxResponse = new JTextField("2");
-        scalesMaxResponse.setBounds(190, 225, 25, 20);
         scalesMaxResponse.setName("scales maximum");
         add(scalesMaxResponse);
-        fields[13] = scalesMaxResponse;
+        fields[10] = scalesMaxResponse;
+
+        add(new JLabel());
 
         JCheckBox displayTrain = new JCheckBox("display training images"); 
-        displayTrain.setBounds(125, 250, 160, 20);
         add(displayTrain);
         view[0] = displayTrain;
 
         JCheckBox displayTest = new JCheckBox("display testing images"); 
-        displayTest.setBounds(125, 275, 150, 20);
         add(displayTest);
         view[1] = displayTest;
 
+        add(new JLabel());
+
         JButton process = new JButton("PROCESS");
-        process.setBounds(150, 300, 100, 25);
         process.setActionCommand("process");
         process.addActionListener(this);
         add(process);
         button = process;
+
+        pack();
     }
 
     public static void main(String[] args) {

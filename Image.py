@@ -1,4 +1,5 @@
 import cv2
+from matplotlib import pyplot as plt
 
 
 # This class handles the characteristics of each image and enables us to perform image specific methods.
@@ -37,24 +38,26 @@ class Image:
         return sum(validNegProb) / len(validNegProb)
 
     # displays image to user with corresponding prediction and probability
-    def display(self):
+    def display(self, name, count, len_test_images, prediction, probability, scale_counts, ctrl_counts):
         img = cv2.imread(self.file)
         img = cv2.resize(img, (self.size[1], self.size[0]))
-        cv2.imshow(f"Prediction: {self.get_prediction()}, Probability: {self.get_probability()}", img)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        _, (ax1) = plt.subplots(1, 1, figsize=(8, 4), sharex=True, sharey=True)
+        ax1.axis('off')
+        ax1.set_title(f"thread {name}: {count}/{len_test_images} (Prediction: {round(prediction, 2)}, Probability: {round(probability, 2)}, counts: {scale_counts}, ctrl: {ctrl_counts})")
+        ax1.imshow(img, cmap=plt.cm.gray)
+        plt.show()
         
 
     # obtain the name of the image based on the file
     # returns a string representation of the image's name
     def get_name(self):
-        return self.file[self.file.rfind("/") + 1:self.file.rfind(".")]
+        return self.file[self.file.rfind("\\") + 1:self.file.rfind(".")]
 
     def getSize(self, i):
         return self.size[i]
     
     def getImage(self, a, b, i, j):
-        patch = self.image[i:i + a, j:j + b]
+        patch = self.image[i:i + b, j:j + a]
         return patch
     
     def getFile(self):

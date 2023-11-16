@@ -15,22 +15,10 @@ class Patch:
         self.prediction = None
         self.probability = None
 
-    # pads patch's pixel data to achieve uniform size while not stretching the elements (only used for user-labeled positive patches)
-    # returns an image
-    def pad(self, img, patch_size):
-        height, width = self.size
-        desiredWidth, desiredHeight = patch_size
-        scaleWidth, scaleHeight = desiredWidth / width, desiredHeight / height
-        validScale = min(scaleWidth, scaleHeight)
-        patch = cv2.resize(img, (int(width * validScale), int(height * validScale)))
-        paddedPatch = cv2.copyMakeBorder(patch, patch_size[0] - int(height * validScale), 0,
-                                         patch_size[1] - int(width * validScale), 0, cv2.BORDER_CONSTANT, None, value=0)
-        return paddedPatch
-
     # labels the individual patch based on previously trained model
     # returns appropriate float representations of the patch's probability and prediction
     def label(self, model, cell_size, block_size):
-        _, patchHOG = hog(self.patch, orientations=9, pixels_per_cell=cell_size, cells_per_block=block_size, visualize=True, channel_axis=-1)
+        _, patchHOG = hog(self.patch, orientations=9, pixels_per_cell=cell_size, cells_per_block=block_size, visualize=True)
         hog_image = rescale_intensity(patchHOG, in_range=(0, 10))
         nx, ny = hog_image.shape
         hog_image_rescaled = hog_image.reshape((1, nx*ny))

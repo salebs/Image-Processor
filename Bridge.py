@@ -21,23 +21,23 @@ class Bridge:
         ax1.set_title("Set up started.")
         plt.show() 
 
-        directory = self.args[0]
-        modelType = self.args[1]
-        negativePatchCount = int(self.args[2])
-        imageSize = (int(self.args[3]), int(self.args[4]))
-        patchSize = (int(self.args[5]), int(self.args[6]))
-        cellSize = (int(self.args[7]), int(self.args[8]))
-        blockSize = (int(self.args[9]), int(self.args[10]))
-        stepSize = float(self.args[11])
-        scales = [float(self.args[12]), 1, float(self.args[13])]
-        displayTrain = self.isTrue(self.args[14])
-        displayTest = self.isTrue(self.args[15])
+        modelType = self.args[0]
+        negativePatchCount = int(self.args[1])
+        imageSize = (int(self.args[2]), int(self.args[3]))
+        cellSize = (int(self.args[4]), int(self.args[5]))
+        blockSize = (int(self.args[6]), int(self.args[7]))
+        stepSize = float(self.args[8])
+        scales = [float(self.args[9]), 1, float(self.args[10])]
+        displayTrain = self.isTrue(self.args[11])
+        displayTest = self.isTrue(self.args[12])
+        patchSize = (round(float(self.args[13])), round(float(self.args[14])))
+        imageRatio = float(self.args[15])
 
         _, (ax1) = plt.subplots(1, 1, figsize=(4, 4), sharex=True, sharey=True)
         ax1.set_title("Set up ended. Process started.")
         plt.show() 
 
-        model = ImageLabelModel(directory, modelType, negativePatchCount, imageSize, patchSize, cellSize, blockSize, scales, stepSize, displayTrain, displayTest)       
+        model = ImageLabelModel(modelType, negativePatchCount, imageSize, imageRatio, patchSize, cellSize, blockSize, scales, stepSize, displayTrain, displayTest)       
         model.main()
 
         _, (ax1) = plt.subplots(1, 1, figsize=(4, 4), sharex=True, sharey=True)
