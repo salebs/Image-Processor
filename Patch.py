@@ -18,7 +18,7 @@ class Patch:
     # labels the individual patch based on previously trained model
     # returns appropriate float representations of the patch's probability and prediction
     def label(self, model, cell_size, block_size):
-        _, patchHOG = hog(self.patch, orientations=9, pixels_per_cell=cell_size, cells_per_block=block_size, visualize=True)
+        _, patchHOG = hog(self.patch, orientations=8, pixels_per_cell=cell_size, cells_per_block=block_size, visualize=True)
         hog_image = rescale_intensity(patchHOG, in_range=(0, 10))
         nx, ny = hog_image.shape
         hog_image_rescaled = hog_image.reshape((1, nx*ny))

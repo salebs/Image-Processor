@@ -1,4 +1,5 @@
 from ImageLabelModel import *
+from ImageLabelPredictions import *
 
 # This class handles the connection between the Python backend and the Java frontend.
 class Bridge:
@@ -21,27 +22,54 @@ class Bridge:
         ax1.set_title("Set up started.")
         plt.show() 
 
-        modelType = self.args[0]
+        modelType = self.args[0] 
         negativePatchCount = int(self.args[1])
         imageSize = (int(self.args[2]), int(self.args[3]))
         cellSize = (int(self.args[4]), int(self.args[5]))
         blockSize = (int(self.args[6]), int(self.args[7]))
         stepSize = float(self.args[8])
         scales = [float(self.args[9]), 1, float(self.args[10])]
-        displayTrain = self.isTrue(self.args[11])
-        displayTest = self.isTrue(self.args[12])
-        patchSize = (round(float(self.args[13])), round(float(self.args[14])))
-        imageRatio = float(self.args[15])
+        displayTrain = self.isTrue(self.args[12])
+        displayTest = self.isTrue(self.args[13])
+        patchSize = (round(float(self.args[14])), round(float(self.args[15])))
+        imageRatio = float(self.args[16])
+        neighbor_count = int(self.args[11])
 
         _, (ax1) = plt.subplots(1, 1, figsize=(4, 4), sharex=True, sharey=True)
         ax1.set_title("Set up ended. Process started.")
         plt.show() 
 
-        model = ImageLabelModel(modelType, negativePatchCount, imageSize, imageRatio, patchSize, cellSize, blockSize, scales, stepSize, displayTrain, displayTest)       
+        model = ImageLabelModel(modelType, negativePatchCount, imageSize, imageRatio, patchSize, cellSize, blockSize, scales, stepSize, neighbor_count, displayTrain, displayTest)       
         model.main()
 
         _, (ax1) = plt.subplots(1, 1, figsize=(4, 4), sharex=True, sharey=True)
         ax1.set_title("Process ended.")
+        plt.show() 
+
+    def predict(self):
+
+        modelType = self.args[0] 
+        negativePatchCount = int(self.args[1])
+        imageSize = (int(self.args[2]), int(self.args[3]))
+        cellSize = (int(self.args[4]), int(self.args[5]))
+        blockSize = (int(self.args[6]), int(self.args[7]))
+        stepSize = float(self.args[8])
+        scales = [float(self.args[9]), 1, float(self.args[10])]
+        displayTrain = self.isTrue(self.args[12])
+        displayTest = self.isTrue(self.args[13])
+        patchSize = (round(float(self.args[14])), round(float(self.args[15])))
+        imageRatio = float(self.args[16])
+        neighbor_count = float(self.args[11])
+
+        _, (ax1) = plt.subplots(1, 1, figsize=(4, 4), sharex=True, sharey=True)
+        ax1.set_title("Predictions started.")
+        plt.show() 
+        
+        model = ImageLabelPredictions(modelType, negativePatchCount, imageSize, imageRatio, patchSize, cellSize, blockSize, scales, stepSize, neighbor_count, displayTrain, displayTest)       
+        model.main()
+
+        _, (ax1) = plt.subplots(1, 1, figsize=(4, 4), sharex=True, sharey=True)
+        ax1.set_title("Predictions ended.")
         plt.show() 
 
     # analyze the testing images with the appropriate text files

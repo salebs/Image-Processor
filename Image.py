@@ -1,3 +1,4 @@
+import math
 import cv2
 from matplotlib import pyplot as plt
 
@@ -21,15 +22,14 @@ class Image:
 
     # calculate overall prediction for image
     # returns an integer representing image's prediction
-    def get_prediction(self):
-        if sum(self.predictions) / len(self.predictions) >= 0.5:
-            return 1
-        return 0
+    def get_prediction(self, imageRatio):
+        return math.floor((100 * sum(self.predictions) / len(self.predictions)) / imageRatio)
 
     # calculate overall probability for image based on prediction
     # returns an integer representing image's probability
-    def get_probability(self):
-        if self.get_prediction() == 1:
+    def get_probability(self, imageRatio):
+        print(sum(self.predictions))
+        if self.get_prediction(imageRatio) != 0:
             posProb = [probability[1] for probability in self.probabilities]
             validPosProb = [posProb[i] for i in range(0, len(self.predictions)) if self.predictions[i] == 1]
             return sum(validPosProb) / len(validPosProb)

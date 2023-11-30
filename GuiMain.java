@@ -24,7 +24,7 @@ public class GuiMain extends JFrame implements ActionListener{
     /**
      * The button is the process button.
      */
-    private JButton button;
+    private JButton[] buttons;
 
     /**
      * When the process button is hit, a process thread is spun off to construct an Image Processor with the user specified paramters. It will also disable the process button and create a GuiWindow.
@@ -33,44 +33,88 @@ public class GuiMain extends JFrame implements ActionListener{
      */
     public void run(String[] args) {
         try {
-            ImagePanel image = new ImagePanel(button, args);
+            ImagePanel image = new ImagePanel(buttons[0], args);
             image.setVisible(true);
-            button.setEnabled(false);
         } catch (IOException e) {
             System.out.println("Exception is caught");
             e.printStackTrace();
         }
     }
 
+    public void predict() {
+        String command = "python " + "Predict.py";
+        System.out.println(command);
+        ProcessBuilder processBuilder = new ProcessBuilder(command.split(" "));
+        Process process;
+        StatusWindow status;
+        try {
+            process = processBuilder.start();
+            status = new StatusWindow(process, buttons[2]);
+            status.setVisible(true);
+        } catch (IOException e1) {
+            System.out.println("Cannot execute file.");
+            e1.printStackTrace();
+        }
+    }
+
+    public void adjust(String[] args) {
+        String command = "python " + "Adjust.py";
+        for (String arg : args) { command += " " + arg; }
+        System.out.println(command);
+        ProcessBuilder processBuilder = new ProcessBuilder(command.split(" "));
+        Process process;
+        StatusWindow status;
+        try {
+            process = processBuilder.start();
+            status = new StatusWindow(process, buttons[1]);
+            status.setVisible(true);
+        } catch (IOException e1) {
+            System.out.println("Cannot execute file.");
+            e1.printStackTrace();
+        }
+    }
+
+
     /**
      * Ensure all fields are filled out in GUI and starts the process based off the user-defined parameters.
      */
     public void actionPerformed(ActionEvent event) {
-        String[] args = new String[13];
-        for (int i=0; i<fields.length; i++) {
-            String fieldText = fields[i].getText();
-            if (fieldText == "") { 
-                JOptionPane.showMessageDialog(null, "Enter information for all fields.", "Warning", JOptionPane.WARNING_MESSAGE);
-                return;
+        System.out.println("clicked");
+        if (event.getActionCommand() == "model" | event.getActionCommand() == "adjust") {
+            String[] args = new String[14];
+            for (int i=0; i<fields.length; i++) {
+                int j = i;
+                String fieldText = fields[j].getText();
+                System.out.println(fieldText);
+                if (fieldText == "") { 
+                    JOptionPane.showMessageDialog(null, "Enter information for all fields.", "Warning", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                args[j] = fieldText; 
+                
             }
-            args[i] = fieldText;
+            for (int i=0; i<view.length; i++) {
+                boolean check = view[i].isSelected();
+                String boxString;
+                if (check) { boxString = "true"; }
+                else { boxString = "false"; }
+                args[fields.length + i] = boxString;
+            }
+            for (String arg : args) { System.out.println(arg); }
+            if (event.getActionCommand() == "adjust") { adjust(args); }
+            else { run(args); }
+        } else if (event.getActionCommand() == "predict") {
+            predict();
         }
-        for (int i=0; i<view.length; i++) {
-            boolean check = view[i].isSelected();
-            String boxString;
-            if (check) { boxString = "true"; }
-            else { boxString = "false"; }
-            args[fields.length + i] = boxString;
-        }
-        run(args);
     }
     
     /**
      * Create a GUI and install all appropriate fields and check boxes to gather terminal command arguments, as well as process button.
      */
     public GuiMain() {
-        fields = new JTextField[11];
+        fields = new JTextField[12];
         view = new JCheckBox[2];
+        buttons = new JButton[3];
 
         setTitle("Image Processor");
         setLayout(new GridLayout(12, 3));
@@ -120,11 +164,11 @@ public class GuiMain extends JFrame implements ActionListener{
         cellSize.setBounds(20, 150, 150, 20);
         add(cellSize);
         JTextField cellSizeMinResponse = new JTextField("10");
-        cellSizeMinResponse.setName("cell size minimum");
+        cellSizeMinResponse.setName("cell size min");
         add(cellSizeMinResponse);
         fields[4] = cellSizeMinResponse;
         JTextField cellSizeMaxResponse = new JTextField("10");
-        cellSizeMaxResponse.setName("cell size maximum");
+        cellSizeMaxResponse.setName("cell size min");
         add(cellSizeMaxResponse);
         fields[5] = cellSizeMaxResponse;
 
@@ -159,6 +203,14 @@ public class GuiMain extends JFrame implements ActionListener{
         add(scalesMaxResponse);
         fields[10] = scalesMaxResponse;
 
+        JLabel neighbor = new JLabel("Enter neighbor count:");
+        add(neighbor);
+        JTextField neighborResponse = new JTextField("3");
+        neighborResponse.setName("neighbor count");
+        add(neighborResponse);
+        fields[11] = neighborResponse;
+
+        add(new JLabel());
         add(new JLabel());
 
         JCheckBox displayTrain = new JCheckBox("display training images"); 
@@ -169,13 +221,23 @@ public class GuiMain extends JFrame implements ActionListener{
         add(displayTest);
         view[1] = displayTest;
 
-        add(new JLabel());
-
-        JButton process = new JButton("PROCESS");
-        process.setActionCommand("process");
+        JButton process = new JButton("MODEL");
+        process.setActionCommand("model");
         process.addActionListener(this);
         add(process);
-        button = process;
+        buttons[0] = process;
+
+        JButton adjust = new JButton("ADJUST");
+        adjust.setActionCommand("adjust");
+        adjust.addActionListener(this);
+        add(adjust);
+        buttons[1] = adjust;
+
+        JButton predict = new JButton("PREDICT");
+        predict.setActionCommand("predict");
+        predict.addActionListener(this);
+        add(predict);
+        buttons[2] = predict;
 
         pack();
     }

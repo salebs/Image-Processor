@@ -191,9 +191,8 @@ class ImagePanel extends JFrame{
         cancel.setActionCommand("cancel");
         cancel.addActionListener(new ActionListener() { 
             public void actionPerformed(ActionEvent e) { 
-                dispose();
                 button.setEnabled(true);
-            } 
+            }
         });
         cancel.setBounds(300, 350, 100, 25);
         add(cancel);
